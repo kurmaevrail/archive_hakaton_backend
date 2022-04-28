@@ -16,5 +16,5 @@ async function DBrow(target) {
 function main() {
     console.log("Hello, world")
     const target = '/db/'
-    DBrow(target)
+    DBrow(target + '0:1')
 }

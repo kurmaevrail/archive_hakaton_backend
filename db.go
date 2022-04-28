@@ -9,8 +9,7 @@ import (
        "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
-
-func ConnectDB(addr string, dbName string, ctx context.Context) (error, driver.Conn) {
+func connectDB(addr string, dbName string, ctx context.Context) (error, driver.Conn) {
     ctx         = context.Background()
     conn, err   := clickhouse.Open(&clickhouse.Options{
         Addr: []string{addr},
@@ -29,7 +28,7 @@ func ConnectDB(addr string, dbName string, ctx context.Context) (error, driver.C
 }
 
 // Create the MergeTree table
-func CreateTable(ctx context.Context, table string, conn driver.Conn) (error) {
+func createTable(ctx context.Context, table string, conn driver.Conn) (error) {
     query := fmt.Sprintf(`
         CREATE TABLE %s (
             Time                    Float,
@@ -45,7 +44,7 @@ func CreateTable(ctx context.Context, table string, conn driver.Conn) (error) {
     return conn.Exec(ctx, query);
 }
 
-func InsertBatched(ctx context.Context, conn driver.Conn, table string, rows []row) (error) {
+func insertBatched(ctx context.Context, conn driver.Conn, table string, rows []row) (error) {
     batch, err := conn.PrepareBatch(ctx, fmt.Sprintf("INSERT INTO %s", table));
     if err != nil { return err }
 
@@ -57,18 +56,15 @@ func InsertBatched(ctx context.Context, conn driver.Conn, table string, rows []r
     return batch.Send();
 }
 
-/*
-func main () {
-    ctx := context.Background();
-    err, conn := ConnectDB("localhost:9000", DBNAME, ctx);
-    if err != nil { panic (err) }
-
-    CreateTable(ctx, TABLENAME, conn)
-
-    row1 := row{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 }
-
-    err = InsertBatched(ctx, conn, TABLENAME, []row{row1});
-    if err != nil { panic(err) }
-    // err = Insert(ctx, conn, TABLENAME, "id, Name, Symbol", values);
+// Read count rows from the table
+func readTable(ctx context.Context,
+             db string,
+             table string,
+             conn driver.Conn,
+             offset int,
+             count int,
+             dest []row) (error) {
+    query := fmt.Sprintf("SELECT * FROM %s.%s LIMIT %d OFFSET %d", db, table, count, offset)
+    err := conn.Select(ctx, &dest, query)
+    return err
 }
-*/
